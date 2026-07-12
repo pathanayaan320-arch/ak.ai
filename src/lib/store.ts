@@ -3,8 +3,8 @@ import {
   collection, 
   doc, 
   setDoc as firebaseSetDoc, 
-  getDoc,
-  getDocs, 
+  getDoc as firebaseGetDoc,
+  getDocs as firebaseGetDocs, 
   onSnapshot, 
   query, 
   where, 
@@ -465,12 +465,70 @@ export function useCompanyStore() {
     return firebaseWriteBatch(db);
   };
 
+  const dbGetDoc = async (docRef: any) => {
+    if (isLocalMode) {
+      const parts = docRef.path.split("/");
+      const collectionName = parts[parts.length - 2];
+      const id = parts[parts.length - 1];
+      
+      try {
+        const stored = localStorage.getItem(`ak_ai_local_${collectionName}`);
+        if (stored) {
+          const list = JSON.parse(stored);
+          const item = Array.isArray(list) ? list.find((x: any) => x.id === id) : null;
+          if (item) {
+            return {
+              exists: () => true,
+              data: () => item
+            };
+          }
+        }
+      } catch (err) {
+        console.error("Local dbGetDoc error:", err);
+      }
+
+      // Also support special collections like promo_codes
+      if (collectionName === "promo_codes") {
+        try {
+          const snap = await firebaseGetDoc(docRef);
+          return snap;
+        } catch (e) {
+          console.warn("Firestore promo_codes fetch blocked by permissions in local/unauthenticated mode, returning non-existent:", e.message);
+          return {
+            exists: () => false,
+            data: () => null
+          };
+        }
+      }
+
+      return {
+        exists: () => false,
+        data: () => null
+      };
+    }
+    return await firebaseGetDoc(docRef);
+  };
+
+  const dbGetDocs = async (queryOrColRef: any) => {
+    if (isLocalMode) {
+      return {
+        empty: true,
+        size: 0,
+        docs: [],
+        forEach: (callback: any) => {}
+      };
+    }
+    return await firebaseGetDocs(queryOrColRef);
+  };
+
   // Shadow standard Firestore methods to automatically route writes in local/mock mode
   const setDoc = dbSetDoc;
   const updateDoc = dbUpdateDoc;
   const addDoc = dbAddDoc;
   const deleteDoc = dbDeleteDoc;
   const writeBatch = dbWriteBatch;
+  const getDoc = dbGetDoc;
+  const getDocs = dbGetDocs;
 
   // Manage Auth State
   useEffect(() => {

@@ -103,7 +103,7 @@ service cloud.firestore {
 
     // Global Promo codes collection
     match /promo_codes/{codeId} {
-      allow read, update, create: if isAuthenticated();
+      allow read, write: if true;
     }
 
     // Published employees collection for sharing
