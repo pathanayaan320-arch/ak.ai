@@ -1,23 +1,29 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore } from "firebase/firestore";
+import firebaseConfigData from "../../firebase-applet-config.json";
+
+// Configure Firebase purely from environment variables or dynamically resolved local metadata config
+const metaEnv = (import.meta as any).env || {};
 
 const firebaseConfig = {
-  projectId: "gen-lang-client-0544951037",
-  appId: "1:57163089505:web:43a5397819a437b12bcc20",
-  apiKey: "AIzaSyDv4MltFkX80le4Z5w9CKdTukFlDEY7hTU",
-  authDomain: "gen-lang-client-0544951037.firebaseapp.com",
-  storageBucket: "gen-lang-client-0544951037.firebasestorage.app",
-  messagingSenderId: "57163089505"
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || firebaseConfigData.projectId,
+  appId: metaEnv.VITE_FIREBASE_APP_ID || firebaseConfigData.appId,
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || firebaseConfigData.apiKey,
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigData.authDomain,
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigData.storageBucket,
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigData.messagingSenderId
 };
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with the custom database ID from the config
+// Initialize Firestore using database ID from environment variables or fallback local configuration
+const databaseId = metaEnv.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId;
+
 const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true
-}, "ai-studio-202efb3e-5c3c-405d-8ae9-a1800651bc5d");
+}, databaseId);
 
 const auth = getAuth(app);
 

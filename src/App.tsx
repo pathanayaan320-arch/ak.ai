@@ -44,6 +44,8 @@ import SettingsView from "./components/SettingsView";
 import DeveloperConsoleView from "./components/DeveloperConsoleView";
 import TeamChatView from "./components/TeamChatView";
 import IntegrationsView from "./components/IntegrationsView";
+import PrivacyPolicyView from "./components/PrivacyPolicyView";
+import TermsView from "./components/TermsView";
 
 export default function App() {
   const store = useCompanyStore();
@@ -150,10 +152,25 @@ export default function App() {
     if (result.success) {
       setShowAuthModal(false);
     } else {
-      if (result.error?.includes("auth/admin-restricted-operation") || result.error?.includes("restricted")) {
+      const err = result.error || "";
+      if (err.includes("auth/unauthorized-domain") || err.includes("unauthorized-domain")) {
+        setAuthError(
+          `UNAUTHORIZED DOMAIN DETECTED\n\n` +
+          `Firebase blocks Google Sign-In on this custom URL until it is explicitly whitelisted in your console.\n\n` +
+          `👉 HOW TO RESOLVE IN 30 SECONDS:\n` +
+          `1. Open Firebase Console: https://console.firebase.google.com\n` +
+          `2. Select your Firebase Project.\n` +
+          `3. Navigate to Authentication -> Settings tab.\n` +
+          `4. Click on "Authorized Domains" (under the domains section).\n` +
+          `5. Click "Add Domain" and add these hostnames:\n` +
+          `   • ais-dev-y3sqirnqpyh5sc3weanefi-744846676105.asia-east1.run.app\n` +
+          `   • ais-pre-y3sqirnqpyh5sc3weanefi-744846676105.asia-east1.run.app\n\n` +
+          `💡 IN THE MEANTIME: Click "One-click Demo Guest Access" below to inspect the full premium dashboard immediately without any login!`
+        );
+      } else if (err.includes("auth/admin-restricted-operation") || err.includes("restricted")) {
         setAuthError("Google Sign-In requires active project authentication. Please try Guest Access if Google Sign-In is restricted, or ensure your config is set up.");
       } else {
-        setAuthError(result.error || "Google sign in failed.");
+        setAuthError(err || "Google sign in failed.");
       }
     }
   };
@@ -257,10 +274,17 @@ export default function App() {
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-teal-500/30">
-        <LandingPage 
-          onGetStarted={() => { setAuthMode("signup"); setShowAuthModal(true); }}
-          onLoginClick={() => { setAuthMode("signin"); setShowAuthModal(true); }}
-        />
+        {currentPage === "privacy" ? (
+          <PrivacyPolicyView onBack={() => setCurrentPage("dashboard")} />
+        ) : currentPage === "terms" ? (
+          <TermsView onBack={() => setCurrentPage("dashboard")} />
+        ) : (
+          <LandingPage 
+            onGetStarted={() => { setAuthMode("signup"); setShowAuthModal(true); }}
+            onLoginClick={() => { setAuthMode("signin"); setShowAuthModal(true); }}
+            onNavigate={(page) => setCurrentPage(page)}
+          />
+        )}
 
         {/* Unified Authentication dialog Modal */}
         <AnimatePresence>
@@ -293,7 +317,7 @@ export default function App() {
                 </div>
 
                 {authError && (
-                  <div className="mb-4 text-xs font-mono text-red-400 bg-red-500/5 px-3 py-2 border border-red-500/10 rounded-lg">
+                  <div className="mb-4 text-xs font-mono text-red-400 bg-red-500/5 px-3.5 py-3 border border-red-500/10 rounded-lg whitespace-pre-line text-left leading-relaxed">
                     {authError}
                   </div>
                 )}
@@ -490,6 +514,12 @@ export default function App() {
 
         {/* User profile details & Sign Out trigger */}
         <div className="p-4 border-t border-[#27272A] bg-[#09090B] shrink-0 space-y-4">
+          <div className="flex justify-center space-x-3 text-[10px] text-[#71717A] font-light pb-2 border-b border-[#27272A]/30">
+            <button onClick={() => { setCurrentPage("privacy"); setSidebarOpen(false); }} className="hover:text-white cursor-pointer bg-transparent border-none p-0 outline-none">Privacy Policy</button>
+            <span className="text-[#27272A]">•</span>
+            <button onClick={() => { setCurrentPage("terms"); setSidebarOpen(false); }} className="hover:text-white cursor-pointer bg-transparent border-none p-0 outline-none">Terms of Service</button>
+          </div>
+
           <div className="flex items-center gap-3 p-2 bg-[#18181B] rounded-lg">
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {profile?.displayName?.slice(0, 2).toUpperCase() || "VIP"}
@@ -693,6 +723,14 @@ export default function App() {
                 <SettingsView 
                   profile={profile}
                 />
+              )}
+
+              {currentPage === "privacy" && (
+                <PrivacyPolicyView onBack={() => setCurrentPage("settings")} />
+              )}
+
+              {currentPage === "terms" && (
+                <TermsView onBack={() => setCurrentPage("settings")} />
               )}
 
               {currentPage === "developer-console" && isDeveloper && user && (

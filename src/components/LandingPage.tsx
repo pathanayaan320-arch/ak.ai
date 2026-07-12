@@ -23,9 +23,10 @@ import {
 interface LandingPageProps {
   onGetStarted: () => void;
   onLoginClick: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-export default function LandingPage({ onGetStarted, onLoginClick }: LandingPageProps) {
+export default function LandingPage({ onGetStarted, onLoginClick, onNavigate }: LandingPageProps) {
   const [selectedDemo, setSelectedDemo] = useState<"startup" | "brand">("startup");
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeStoryPhase, setActiveStoryPhase] = useState<number>(0);
@@ -902,8 +903,8 @@ export default function LandingPage({ onGetStarted, onLoginClick }: LandingPageP
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#27272A] pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#71717A]">
           <span>&copy; {new Date().getFullYear()} AK.AI Corp. All rights reserved.</span>
           <div className="flex space-x-6 mt-4 sm:mt-0 font-light">
-            <span className="hover:text-white cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-white cursor-pointer">Terms of Service</span>
+            <button onClick={() => onNavigate?.("privacy")} className="hover:text-white cursor-pointer bg-transparent border-none p-0 outline-none text-xs text-[#71717A] hover:underline transition-colors">Privacy Policy</button>
+            <button onClick={() => onNavigate?.("terms")} className="hover:text-white cursor-pointer bg-transparent border-none p-0 outline-none text-xs text-[#71717A] hover:underline transition-colors">Terms of Service</button>
           </div>
         </div>
       </footer>

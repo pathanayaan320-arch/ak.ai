@@ -1,11 +1,163 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, query, where, limit, orderBy, deleteDoc } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  collection as clientCollection, 
+  doc as clientDoc, 
+  setDoc as clientSetDoc, 
+  getDoc as clientGetDoc, 
+  getDocs as clientGetDocs, 
+  addDoc as clientAddDoc, 
+  updateDoc as clientUpdateDoc, 
+  query as clientQuery, 
+  where as clientWhere, 
+  limit as clientLimit, 
+  orderBy as clientOrderBy, 
+  deleteDoc as clientDeleteDoc 
+} from "firebase/firestore";
+import admin from "firebase-admin";
+
+// Initialize Firebase Admin with service-account.json if present
+let adminApp: any = null;
+let adminDb: any = null;
+let useAdmin = false;
+
+try {
+  const serviceAccountPath = path.join(process.cwd(), "firebase-service-account.json");
+  if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+    adminApp = (admin as any).initializeApp({
+      credential: (admin as any).credential.cert(serviceAccount)
+    });
+    adminDb = adminApp.firestore();
+    useAdmin = true;
+    console.log("Firebase Admin initialized successfully with project ID: " + serviceAccount.project_id);
+  } else {
+    console.log("No service-account.json found. Backend using Client Web SDK.");
+  }
+} catch (error) {
+  console.warn("WARNING: Failed to initialize Firebase Admin, falling back to Client SDK:", error);
+}
+
+// Compatibility layer for client-side queries using Admin SDK when available
+function collection(db: any, pathName: string) {
+  if (useAdmin && adminDb) {
+    return adminDb.collection(pathName);
+  }
+  return clientCollection(db, pathName);
+}
+
+function doc(parent: any, pathName: string, id?: string) {
+  if (useAdmin && adminDb) {
+    if (typeof parent === "string") {
+      return adminDb.doc(parent);
+    }
+    if (id) {
+      return parent.doc(id);
+    }
+    return adminDb.doc(pathName);
+  }
+  return clientDoc(parent, pathName, id);
+}
+
+async function setDoc(docRef: any, data: any, options?: any) {
+  if (useAdmin) {
+    if (options && options.merge) {
+      return await docRef.set(data, { merge: true });
+    }
+    return await docRef.set(data);
+  }
+  return await clientSetDoc(docRef, data, options);
+}
+
+async function getDoc(docRef: any) {
+  if (useAdmin) {
+    const snap = await docRef.get();
+    return {
+      exists: () => snap.exists,
+      data: () => snap.data(),
+      id: snap.id
+    };
+  }
+  return await clientGetDoc(docRef);
+}
+
+async function getDocs(queryRef: any) {
+  if (useAdmin) {
+    const snap = await queryRef.get();
+    return {
+      empty: snap.empty,
+      docs: snap.docs.map((d: any) => ({
+        id: d.id,
+        data: () => d.data()
+      }))
+    };
+  }
+  return await clientGetDocs(queryRef);
+}
+
+async function addDoc(collectionRef: any, data: any) {
+  if (useAdmin) {
+    const docRef = await collectionRef.add(data);
+    return { id: docRef.id };
+  }
+  return await clientAddDoc(collectionRef, data);
+}
+
+async function updateDoc(docRef: any, data: any) {
+  if (useAdmin) {
+    return await docRef.update(data);
+  }
+  return await clientUpdateDoc(docRef, data);
+}
+
+async function deleteDoc(docRef: any) {
+  if (useAdmin) {
+    return await docRef.delete();
+  }
+  return await clientDeleteDoc(docRef);
+}
+
+function query(collectionRef: any, ...constraints: any[]) {
+  if (useAdmin) {
+    let q = collectionRef;
+    for (const constraint of constraints) {
+      if (constraint && typeof constraint === "function") {
+        q = constraint(q);
+      }
+    }
+    return q;
+  }
+  return clientQuery(collectionRef, ...constraints);
+}
+
+function where(field: string, op: any, value: any) {
+  if (useAdmin) {
+    return (q: any) => q.where(field, op === "==" ? "==" : op, value);
+  }
+  return clientWhere(field, op, value);
+}
+
+function limit(n: number) {
+  if (useAdmin) {
+    return (q: any) => q.limit(n);
+  }
+  return clientLimit(n);
+}
+
+function orderBy(field: string, dir?: any) {
+  if (useAdmin) {
+    return (q: any) => q.orderBy(field, dir || "asc");
+  }
+  return clientOrderBy(field, dir);
+}
+
 
 dotenv.config();
 
@@ -384,27 +536,49 @@ Generate the parsed and enhanced response in strict JSON format.`;
 // INSTAGRAM COMMENT-TO-DM AUTOMATION ENGINE
 // ==========================================
 
+// Dynamically load Firebase Applet configuration to avoid hardcoded string literals
+let firebaseConfig: any = {};
+try {
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  }
+} catch (error) {
+  console.warn("WARNING: Failed to read firebase-applet-config.json:", error);
+}
+
 const serverApp = !getApps().length ? initializeApp({
-  projectId: "gen-lang-client-0544951037",
-  appId: "1:57163089505:web:43a5397819a437b12bcc20",
-  apiKey: "AIzaSyDv4MltFkX80le4Z5w9CKdTukFlDEY7hTU",
-  authDomain: "gen-lang-client-0544951037.firebaseapp.com",
-  storageBucket: "gen-lang-client-0544951037.firebasestorage.app",
-  messagingSenderId: "57163089505"
+  projectId: process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+  appId: process.env.FIREBASE_APP_ID || firebaseConfig.appId,
+  apiKey: process.env.FIREBASE_API_KEY || firebaseConfig.apiKey,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId
 }) : getApp();
 
 const serverDb = initializeFirestore(serverApp, {
   ignoreUndefinedProperties: true
-}, "ai-studio-202efb3e-5c3c-405d-8ae9-a1800651bc5d");
+}, process.env.FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId);
 
-// Security AES-256 Token Encryption Helpers
-const ENCRYPTION_KEY = process.env.INSTAGRAM_TOKEN_ENC_KEY || "d6F3m1pX8qY2tZ7w9v4u1r5s2e6t3y4u"; // 32 characters
+// Security AES-256 Token Encryption Helpers (utilizes dynamic env key or falls back to a secure session key)
+let sessionEncryptionKey: string | null = null;
+function getEncryptionKey(): string {
+  const key = process.env.INSTAGRAM_TOKEN_ENC_KEY;
+  if (key) return key;
+  if (!sessionEncryptionKey) {
+    // Generate a secure 32-character session-based encryption fallback so no hardcoded keys exist in the source code
+    sessionEncryptionKey = crypto.randomBytes(16).toString("hex");
+    console.warn("WARNING: INSTAGRAM_TOKEN_ENC_KEY is not defined in env. Dynamically generated a random session-based security key.");
+  }
+  return sessionEncryptionKey;
+}
+
 const IV_LENGTH = 16;
 
 function encryptToken(text: string): string {
   try {
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(getEncryptionKey()), iv);
     let encrypted = cipher.update(text);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return iv.toString("hex") + ":" + encrypted.toString("hex");
@@ -421,7 +595,7 @@ function decryptToken(text: string): string {
     if (!ivPart) return text;
     const iv = Buffer.from(ivPart, "hex");
     const encryptedText = Buffer.from(textParts.join(":"), "hex");
-    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(getEncryptionKey()), iv);
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
@@ -456,7 +630,7 @@ app.get("/api/instagram/webhook", (req, res) => {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || "ak_ai_verify_token_2026";
+  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || "development_verify_token";
 
   if (mode === "subscribe" && token === verifyToken) {
     console.log("Instagram Webhook subscription verified successfully.");
@@ -472,7 +646,7 @@ function verifyInstagramWebhookSignature(req: any): boolean {
   const signature = req.headers["x-hub-signature-256"];
   if (!signature) return false;
 
-  const appSecret = process.env.INSTAGRAM_APP_SECRET || "sandbox_app_secret_ak_ai_2026";
+  const appSecret = process.env.INSTAGRAM_APP_SECRET || "development_sandbox_app_secret";
   const elements = signature.split("=");
   const signatureHash = elements[1];
 
@@ -718,7 +892,7 @@ app.post("/api/instagram/data-deletion", async (req, res) => {
     const encodedSig = parts[0];
     const payload = parts[1];
 
-    const appSecret = process.env.INSTAGRAM_APP_SECRET || "sandbox_app_secret_ak_ai_2026";
+    const appSecret = process.env.INSTAGRAM_APP_SECRET || "development_sandbox_app_secret";
     
     const sig = Buffer.from(encodedSig.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("hex");
     const expectedSig = crypto
@@ -794,7 +968,7 @@ app.post("/api/instagram/sandbox/simulate-comment", async (req, res) => {
       ]
     };
 
-    const appSecret = process.env.INSTAGRAM_APP_SECRET || "sandbox_app_secret_ak_ai_2026";
+    const appSecret = process.env.INSTAGRAM_APP_SECRET || "development_sandbox_app_secret";
     const signatureHash = crypto
       .createHmac("sha256", appSecret)
       .update(JSON.stringify(payload))
