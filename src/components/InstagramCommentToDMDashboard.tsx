@@ -86,6 +86,99 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
   useEffect(() => {
     if (!user?.uid) return;
 
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+
+    if (isGuest) {
+      // Set up local storage-based data sync for Guest Access
+      const loadLocalData = () => {
+        let localAccts: IgAccount[] = [];
+        try {
+          const acctsRaw = localStorage.getItem("ak_ai_ig_accounts");
+          if (acctsRaw) {
+            localAccts = JSON.parse(acctsRaw);
+          } else {
+            // Seed a mock Instagram account
+            localAccts = [{
+              id: "acct_mock_1",
+              uid: user.uid,
+              ig_user_id: "ig_travel_blogger",
+              username: "travel_blogger_99",
+              page_id: "page_blogger",
+              login_type: "instagram_login",
+              status: "active",
+              access_token_encrypted: "mock_encrypted",
+              token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+              createdAt: new Date().toISOString()
+            }];
+            localStorage.setItem("ak_ai_ig_accounts", JSON.stringify(localAccts));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        setIgAccounts(localAccts);
+        if (localAccts.length > 0 && !selectedSimAccount) {
+          setSelectedSimAccount(localAccts[0].ig_user_id);
+        }
+
+        let localRules: AutomationRule[] = [];
+        try {
+          const rulesRaw = localStorage.getItem("ak_ai_automation_rules");
+          if (rulesRaw) {
+            localRules = JSON.parse(rulesRaw);
+          } else {
+            // Seed a default automation rule
+            localRules = [{
+              id: "rule_1",
+              uid: user.uid,
+              ig_account_id: "acct_mock_1",
+              name: "Comment to Promo Link",
+              target_post_id: "",
+              keywords: ["promo", "link", "code"],
+              match_type: "contains",
+              reply_message: "Hey there! Here is your exclusive VIP 20% discount code: FOUNDER20. Use it at checkout here: https://ak.ai/promo",
+              is_active: true,
+              createdAt: new Date().toISOString()
+            }];
+            localStorage.setItem("ak_ai_automation_rules", JSON.stringify(localRules));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        setRules(localRules);
+
+        let localEvents: TriggeredEvent[] = [];
+        try {
+          const eventsRaw = localStorage.getItem("ak_ai_triggered_events");
+          if (eventsRaw) {
+            localEvents = JSON.parse(eventsRaw);
+          } else {
+            localEvents = [{
+              id: "trig_1",
+              uid: user.uid,
+              automation_rule_id: "rule_1",
+              comment_id: "comment_1",
+              commenter_ig_scoped_id: "commenter_1",
+              commenter_username: "fashion_guru_x",
+              comment_text: "Can I get the promo code please?",
+              status: "sent",
+              created_at: new Date().toISOString()
+            }];
+            localStorage.setItem("ak_ai_triggered_events", JSON.stringify(localEvents));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        setTriggeredEvents(localEvents);
+        setLoading(false);
+      };
+
+      loadLocalData();
+
+      // Poll localStorage every second in case other actions update it
+      const interval = setInterval(loadLocalData, 1000);
+      return () => clearInterval(interval);
+    }
+
     const accountsQ = query(collection(db, "ig_accounts"), where("uid", "==", user.uid));
     const rulesQ = query(collection(db, "automation_rules"), where("uid", "==", user.uid));
     const eventsQ = query(
@@ -103,18 +196,25 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
         setSelectedSimAccount(accts[0].ig_user_id);
       }
       setLoading(false);
+    }, (error) => {
+      console.warn("Firestore ig_accounts read permission error, falling back to local simulation mode:", error);
+      setLoading(false);
     });
 
     const unsubRules = onSnapshot(rulesQ, (snap) => {
       const rls: AutomationRule[] = [];
       snap.forEach((d) => rls.push(d.data() as AutomationRule));
       setRules(rls);
+    }, (error) => {
+      console.warn("Firestore automation_rules read permission error:", error);
     });
 
     const unsubEvents = onSnapshot(eventsQ, (snap) => {
       const evs: TriggeredEvent[] = [];
       snap.forEach((d) => evs.push(d.data() as TriggeredEvent));
       setTriggeredEvents(evs);
+    }, (error) => {
+      console.warn("Firestore triggered_events read permission error:", error);
     });
 
     return () => {
@@ -180,13 +280,41 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
     if (!connectUsername.trim()) return;
 
     setIsConnecting(true);
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      const mockIgUserId = `ig_${Math.floor(Math.random() * 899999) + 100000}`;
+      const newAcct: IgAccount = {
+        id: `acct_${mockIgUserId}`,
+        uid: user.uid,
+        ig_user_id: mockIgUserId,
+        username: connectUsername.trim().replace("@", ""),
+        page_id: connectPageId.trim() || `page_${Math.floor(Math.random() * 10000)}`,
+        login_type: connectType,
+        status: "active",
+        access_token_encrypted: "mock_encrypted",
+        token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      const accts = [...igAccounts, newAcct];
+      localStorage.setItem("ak_ai_ig_accounts", JSON.stringify(accts));
+      setIgAccounts(accts);
+      if (!selectedSimAccount) {
+        setSelectedSimAccount(mockIgUserId);
+      }
+      setShowConnectModal(false);
+      setConnectUsername("");
+      setConnectPageId("");
+      setIsConnecting(false);
+      return;
+    }
+
     try {
       const mockIgUserId = `ig_${Math.floor(Math.random() * 899999) + 100000}`;
       const payload = {
         shortToken: `mock_tok_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
         igUserId: mockIgUserId,
         username: connectUsername.trim().replace("@", ""),
-        pageId: connectPageId.trim() || `page_${Math.floor(Math.random() * 10000)}`,
+        page_id: connectPageId.trim() || `page_${Math.floor(Math.random() * 10000)}`,
         loginType: connectType,
         uid: user.uid
       };
@@ -214,6 +342,12 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
 
   // Reconnect account flow (refreshes tokens)
   const handleReconnect = async (acct: IgAccount) => {
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      alert(`Successfully reconnected and refreshed access credentials for @${acct.username}`);
+      return;
+    }
+
     try {
       const payload = {
         shortToken: `mock_reconnect_tok_${Date.now()}`,
@@ -241,6 +375,15 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
   // Disconnect account
   const handleDisconnect = async (acctId: string) => {
     if (!confirm("Are you sure you want to disconnect this Instagram account? This will halt all active comment keyword rules.")) return;
+    
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      const updated = igAccounts.filter(a => a.id !== acctId);
+      localStorage.setItem("ak_ai_ig_accounts", JSON.stringify(updated));
+      setIgAccounts(updated);
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, "ig_accounts", acctId));
     } catch (err: any) {
@@ -254,6 +397,38 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
     if (!ruleName.trim() || !ruleKeywords.trim() || !ruleReplyMessage.trim() || igAccounts.length === 0) return;
 
     setIsSavingRule(true);
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      const keywordList = ruleKeywords.split(",").map(k => k.trim()).filter(k => k.length > 0);
+      const ruleId = ruleIdToEdit || `rule_${Date.now()}`;
+      
+      const payload: AutomationRule = {
+        id: ruleId,
+        uid: user.uid,
+        ig_account_id: igAccounts[0].id, // bind to connected account
+        name: ruleName.trim(),
+        target_post_id: rulePostId.trim() || null,
+        keywords: keywordList,
+        match_type: ruleMatchType,
+        reply_message: ruleReplyMessage.trim(),
+        is_active: true,
+        createdAt: new Date().toISOString()
+      };
+
+      let updatedRules: AutomationRule[] = [];
+      if (ruleIdToEdit) {
+        updatedRules = rules.map(r => r.id === ruleIdToEdit ? payload : r);
+      } else {
+        updatedRules = [...rules, payload];
+      }
+      localStorage.setItem("ak_ai_automation_rules", JSON.stringify(updatedRules));
+      setRules(updatedRules);
+      setShowRuleModal(false);
+      resetRuleForm();
+      setIsSavingRule(false);
+      return;
+    }
+
     try {
       const keywordList = ruleKeywords.split(",").map(k => k.trim()).filter(k => k.length > 0);
       const ruleId = ruleIdToEdit || `rule_${Date.now()}`;
@@ -302,6 +477,15 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
 
   const handleDeleteRule = async (ruleId: string) => {
     if (!confirm("Delete this Comment-to-DM automation rule?")) return;
+
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      const updated = rules.filter(r => r.id !== ruleId);
+      localStorage.setItem("ak_ai_automation_rules", JSON.stringify(updated));
+      setRules(updated);
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, "automation_rules", ruleId));
     } catch (err: any) {
@@ -310,6 +494,14 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
   };
 
   const toggleRuleActive = async (rule: AutomationRule) => {
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      const updated = rules.map(r => r.id === rule.id ? { ...r, is_active: !r.is_active } : r);
+      localStorage.setItem("ak_ai_automation_rules", JSON.stringify(updated));
+      setRules(updated);
+      return;
+    }
+
     try {
       await updateDoc(doc(db, "automation_rules", rule.id), {
         is_active: !rule.is_active
@@ -385,6 +577,25 @@ export default function InstagramCommentToDMDashboard({ user }: InstagramComment
             await appendLog("[WORKER] Broadcast session ended. Drops Private Reply live comment requirement.", 1000, 5);
           } else {
             await appendLog("[WORKER] Private Reply DM successfully sent to Meta API! Code 200 delivered.", 1500, 5);
+          }
+
+          // In Guest Mode, append the simulated triggered event locally
+          const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+          if (isGuest) {
+            const newEvent: TriggeredEvent = {
+              id: `trig_${Date.now()}`,
+              uid: user.uid,
+              automation_rule_id: rules[0]?.id || "rule_1",
+              comment_id: `comm_${Date.now()}`,
+              commenter_ig_scoped_id: `scoped_usr_${Math.floor(Math.random() * 100000)}`,
+              commenter_username: simCommenterName,
+              comment_text: simCommentText,
+              status: (simScenario === "rate_limit" || simScenario === "blocked_user") ? "failed" : (simScenario === "expired_comment" ? "expired" : "sent"),
+              created_at: new Date().toISOString()
+            };
+            const updated = [newEvent, ...triggeredEvents];
+            localStorage.setItem("ak_ai_triggered_events", JSON.stringify(updated));
+            setTriggeredEvents(updated);
           }
         }
       } else {
