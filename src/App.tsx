@@ -451,10 +451,13 @@ export default function App() {
           {/* Brand header */}
           <div className="h-20 flex items-center justify-between px-6 border-b border-[#27272A] shrink-0">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-tr from-white to-neutral-400 rounded-lg flex items-center justify-center">
-                <div className="w-4 h-4 bg-black rounded-sm" />
+              <div className="w-8 h-8 bg-gradient-to-tr from-teal-400 to-indigo-500 rounded-lg flex items-center justify-center shrink-0 shadow-md">
+                <span className="text-black font-black text-xs">AK</span>
               </div>
-              <span className="text-xl font-bold tracking-tight text-white">AK.AI</span>
+              <div className="flex flex-col">
+                <span className="text-base font-black tracking-tight text-white leading-none">AK.AI</span>
+                <span className="text-[8px] uppercase tracking-widest text-teal-400 font-mono font-bold mt-1 leading-none">WORLD'S FIRST AI EMPLOYEE</span>
+              </div>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-500 hover:text-white">
               <X className="w-5 h-5" />

@@ -225,10 +225,13 @@ export default function LandingPage({ onGetStarted, onLoginClick, onNavigate }: 
       }`}>
         <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3 select-none">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-md transition-transform duration-300 hover:rotate-6">
-              <Building2 className="w-5 h-5 text-black stroke-[2]" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-lg transition-transform duration-300 hover:rotate-6">
+              <span className="text-black font-black text-sm">AK</span>
             </div>
-            <span className="font-sans text-xl font-bold tracking-tight text-white">AK.AI</span>
+            <div className="flex flex-col">
+              <span className="font-sans text-base font-black tracking-tight text-white leading-none">AK.AI</span>
+              <span className="text-[7px] uppercase tracking-widest text-teal-400 font-mono font-bold mt-1 leading-none">WORLD'S FIRST AI EMPLOYEE</span>
+            </div>
           </div>
 
           <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-medium text-[#A1A1AA]">
@@ -865,12 +868,15 @@ export default function LandingPage({ onGetStarted, onLoginClick, onNavigate }: 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-                <Building2 className="w-4 h-4 text-black stroke-[2]" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-lg">
+                <span className="text-black font-black text-xs">AK</span>
               </div>
-              <span className="font-bold tracking-tight text-white text-lg">AK.AI</span>
+              <div className="flex flex-col">
+                <span className="font-bold tracking-tight text-white text-base leading-none">AK.AI</span>
+                <span className="text-[7px] uppercase tracking-widest text-teal-400 font-mono font-bold mt-1 leading-none">WORLD'S FIRST AI EMPLOYEE</span>
+              </div>
             </div>
-            <p className="text-xs text-[#71717A] leading-relaxed font-light">The World's First Autonomous AI Company. Built with precision for the next wave of founders.</p>
+            <p className="text-xs text-[#71717A] leading-relaxed font-light">The World's First Autonomous AI Employee system. Built with precision to automate your Instagram comments to DM replies around the clock.</p>
           </div>
 
           <div>

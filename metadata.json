@@ -1,6 +1,6 @@
 {
-  "name": "AK.AI",
-  "description": "The World's First AI Company where you hire an AI CEO to manage an entire team of AI employees to build your projects.",
+  "name": "AK.AI WORLD FIRST AI EMPLOYEE",
+  "description": "[AK.AI] is an AI employee built for creators and businesses on Instagram. It works around the clock — watching every comment for the keywords you set, and automatically sending a private reply with your link, offer, or answer. No manual DMing, no missed leads, no staying up late checking comments. Connect your account, set your keywords, and let your AI employee handle the rest.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
