@@ -135,7 +135,27 @@ export const VENTURE_CODES = [
 ];
 
 export function useCompanyStore() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [localUser, setLocalUser] = useState<any>(() => {
+    const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+    if (isGuest) {
+      const guestUid = localStorage.getItem("ak_ai_guest_uid") || ("guest_" + Math.random().toString(36).substring(2, 11));
+      if (!localStorage.getItem("ak_ai_guest_uid")) {
+        localStorage.setItem("ak_ai_guest_uid", guestUid);
+      }
+      return {
+        uid: guestUid,
+        email: "guest@ak.ai",
+        displayName: "Demo Founder"
+      };
+    }
+    return null;
+  });
+
+  const activeUser = firebaseUser || localUser;
+  const user = activeUser;
+  const setUser = setFirebaseUser;
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -163,7 +183,7 @@ export function useCompanyStore() {
   // Manage Auth State
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
+      setFirebaseUser(currentUser);
       if (currentUser) {
         // Sync profile or create one
         const userDocRef = doc(db, "users", currentUser.uid);
@@ -200,28 +220,65 @@ export function useCompanyStore() {
           setIsDeveloper(userProfile.isDev || false);
         }
       } else {
-        setProfile(null);
-        setIsDeveloper(false);
-        setInspectedUid(null);
-        // Clear state
-        setEmployees([]);
-        setProjects([]);
-        setTasks([]);
-        setChats([]);
-        setMessages([]);
-        setLogs([]);
-        setFiles([]);
-        setNotifications([]);
-        setMemories([]);
-        setIntegrations([]);
-        setAutomationRuns([]);
-        setActiveChatId(null);
+        const isGuest = localStorage.getItem("ak_ai_is_guest") === "true";
+        if (isGuest && localUser) {
+          // Sync guest profile or create one
+          const guestUid = localUser.uid;
+          const userDocRef = doc(db, "users", guestUid);
+          let existingProfile: UserProfile | null = null;
+          try {
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+              existingProfile = docSnap.data() as UserProfile;
+            }
+          } catch (err) {
+            console.error("Error reading guest profile:", err);
+          }
+
+          const userProfile: UserProfile = {
+            uid: guestUid,
+            email: localUser.email,
+            displayName: existingProfile?.displayName || localUser.displayName,
+            createdAt: existingProfile?.createdAt || new Date().toISOString(),
+            balance: existingProfile?.balance ?? 50000,
+            plan: existingProfile?.plan || "Free Tier",
+            isDev: existingProfile?.isDev || false
+          };
+
+          try {
+            await setDoc(userDocRef, userProfile, { merge: true });
+            setProfile(userProfile);
+            setIsDeveloper(userProfile.isDev || false);
+            await seedDefaultEmployees(guestUid);
+          } catch (err) {
+            console.error("Error setting guest profile or seeding employees in Firestore:", err);
+            setProfile(userProfile);
+            setIsDeveloper(userProfile.isDev || false);
+          }
+        } else {
+          setProfile(null);
+          setIsDeveloper(false);
+          setInspectedUid(null);
+          // Clear state
+          setEmployees([]);
+          setProjects([]);
+          setTasks([]);
+          setChats([]);
+          setMessages([]);
+          setLogs([]);
+          setFiles([]);
+          setNotifications([]);
+          setMemories([]);
+          setIntegrations([]);
+          setAutomationRuns([]);
+          setActiveChatId(null);
+        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [localUser]);
 
   // Sync data from Firestore per logged in user with real-time listeners
   useEffect(() => {
@@ -481,9 +538,60 @@ What business goal shall we conquer first today?`,
   const handleDemoSignIn = async () => {
     setLoading(true);
     try {
-      const cred = await signInAnonymously(auth);
-      await updateProfile(cred.user, { displayName: "Demo Founder" });
-      return { success: true };
+      try {
+        const cred = await signInAnonymously(auth);
+        await updateProfile(cred.user, { displayName: "Demo Founder" });
+        return { success: true };
+      } catch (authError: any) {
+        console.warn("Firebase Anonymous Sign-In failed or restricted, using Local Guest Auth fallback:", authError);
+        
+        let guestUid = localStorage.getItem("ak_ai_guest_uid");
+        if (!guestUid) {
+          guestUid = "guest_" + Math.random().toString(36).substring(2, 11);
+          localStorage.setItem("ak_ai_guest_uid", guestUid);
+        }
+        localStorage.setItem("ak_ai_is_guest", "true");
+        
+        const mockUser = {
+          uid: guestUid,
+          email: "guest@ak.ai",
+          displayName: "Demo Founder"
+        };
+        
+        // Seed user profile and default employees
+        const userDocRef = doc(db, "users", guestUid);
+        let existingProfile: UserProfile | null = null;
+        try {
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists()) {
+            existingProfile = docSnap.data() as UserProfile;
+          }
+        } catch (_) {}
+
+        const userProfile: UserProfile = {
+          uid: guestUid,
+          email: mockUser.email,
+          displayName: existingProfile?.displayName || mockUser.displayName,
+          createdAt: existingProfile?.createdAt || new Date().toISOString(),
+          balance: existingProfile?.balance ?? 50000,
+          plan: existingProfile?.plan || "Free Tier",
+          isDev: existingProfile?.isDev || false
+        };
+
+        try {
+          await setDoc(userDocRef, userProfile, { merge: true });
+          setProfile(userProfile);
+          setIsDeveloper(userProfile.isDev || false);
+          await seedDefaultEmployees(guestUid);
+        } catch (dbError) {
+          console.error("Local Guest Auth DB setup error:", dbError);
+          setProfile(userProfile);
+          setIsDeveloper(userProfile.isDev || false);
+        }
+
+        setLocalUser(mockUser);
+        return { success: true };
+      }
     } catch (error: any) {
       return { success: false, error: error.message };
     } finally {
@@ -505,6 +613,8 @@ What business goal shall we conquer first today?`,
   };
 
   const handleSignOut = async () => {
+    localStorage.removeItem("ak_ai_is_guest");
+    setLocalUser(null);
     await signOut(auth);
   };
 
