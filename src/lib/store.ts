@@ -471,6 +471,23 @@ export function useCompanyStore() {
       const collectionName = parts[parts.length - 2];
       const id = parts[parts.length - 1];
       
+      if (collectionName === "users") {
+        try {
+          const storedProfile = localStorage.getItem("ak_ai_local_profile");
+          if (storedProfile) {
+            const profileObj = JSON.parse(storedProfile);
+            if (profileObj && (profileObj.uid === id || profileObj.id === id)) {
+              return {
+                exists: () => true,
+                data: () => profileObj
+              };
+            }
+          }
+        } catch (err) {
+          console.error("Local dbGetDoc users error:", err);
+        }
+      }
+
       try {
         const stored = localStorage.getItem(`ak_ai_local_${collectionName}`);
         if (stored) {
