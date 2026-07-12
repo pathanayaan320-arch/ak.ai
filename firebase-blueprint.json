@@ -1,0 +1,260 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with balance and display name.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "balance": { "type": "number" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "An AI employee working in the user's company.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "department": { "type": "string" },
+        "goal": { "type": "string" },
+        "skills": { "type": "array" },
+        "systemPrompt": { "type": "string" },
+        "model": { "type": "string" },
+        "temperature": { "type": "number" },
+        "status": { "type": "string" },
+        "performance": { "type": "number" },
+        "workload": { "type": "number" },
+        "description": { "type": "string" },
+        "isCustom": { "type": "boolean" },
+        "memory": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "uid", "name"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A project created by the user and planned by the CEO.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string" },
+        "progress": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "timeline": { "type": "array" }
+      },
+      "required": ["id", "uid", "name"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task assigned to an AI employee.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "projectId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "employeeRole": { "type": "string" },
+        "employeeAvatar": { "type": "string" },
+        "status": { "type": "string" },
+        "output": { "type": "string" },
+        "progress": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "uid", "projectId", "title", "assignedTo"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A chat session with the AI CEO.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "uid", "title"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A chat message within a chat session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "chatId": { "type": "string" },
+        "uid": { "type": "string" },
+        "sender": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "chatId", "uid", "sender", "content", "timestamp"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "An activity log entry for operations performed in the workspace.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "projectId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "employeeRole": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["uid", "action", "timestamp"]
+    },
+    "FileAsset": {
+      "title": "FileAsset",
+      "description": "A file generated or uploaded in the workspace.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "size": { "type": "string" },
+        "type": { "type": "string" },
+        "downloadUrl": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "projectName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "uid", "name", "type"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A system notification for the user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "projectId": { "type": "string" }
+      },
+      "required": ["id", "uid", "title", "isRead", "createdAt"]
+    },
+    "Memory": {
+      "title": "Memory",
+      "description": "A long-term memory learned by the AI.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "topic": { "type": "string" },
+        "content": { "type": "string" },
+        "importance": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "uid", "content", "createdAt"]
+    },
+    "PromoCode": {
+      "title": "PromoCode",
+      "description": "A promo code to upgrade a subscription plan.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "plan": { "type": "string" },
+        "isUsed": { "type": "boolean" },
+        "usedBy": { "type": "string" },
+        "usedAt": { "type": "string" }
+      },
+      "required": ["code", "plan", "isUsed"]
+    },
+    "PublishedEmployee": {
+      "title": "PublishedEmployee",
+      "description": "An AI employee published to the public database for sharing.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "avatar": { "type": "string" },
+        "department": { "type": "string" },
+        "goal": { "type": "string" },
+        "skills": { "type": "array" },
+        "systemPrompt": { "type": "string" },
+        "model": { "type": "string" },
+        "temperature": { "type": "number" },
+        "description": { "type": "string" },
+        "publishedBy": { "type": "string" },
+        "publishedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "systemPrompt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles."
+    },
+    "/employees/{id}": {
+      "schema": "Employee",
+      "description": "Stores user's corporate staff roster."
+    },
+    "/projects/{id}": {
+      "schema": "Project",
+      "description": "Stores active user projects."
+    },
+    "/tasks/{id}": {
+      "schema": "Task",
+      "description": "Stores tasks assigned to employees."
+    },
+    "/chats/{id}": {
+      "schema": "Chat",
+      "description": "Stores active CEO chat sessions."
+    },
+    "/messages/{id}": {
+      "schema": "Message",
+      "description": "Stores chat messages."
+    },
+    "/activity_logs/{id}": {
+      "schema": "ActivityLog",
+      "description": "Stores real-time logs of employee work."
+    },
+    "/files/{id}": {
+      "schema": "FileAsset",
+      "description": "Stores file vault documents."
+    },
+    "/notifications/{id}": {
+      "schema": "Notification",
+      "description": "Stores user notifications."
+    },
+    "/memories/{id}": {
+      "schema": "Memory",
+      "description": "Stores AI long-term memories."
+    },
+    "/promo_codes/{codeId}": {
+      "schema": "PromoCode",
+      "description": "Stores reusable or one-time use upgrade promo codes."
+    },
+    "/published_employees/{id}": {
+      "schema": "PublishedEmployee",
+      "description": "Stores publicly published AI employees for sharing."
+    }
+  }
+}

@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Other collections owned by user
+    match /employees/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /projects/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /tasks/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /chats/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /messages/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /activity_logs/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /files/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /notifications/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /memories/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    // Integrations collection
+    match /integrations/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    // Instagram Comment-to-DM Automation collections
+    match /ig_accounts/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /automation_rules/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /triggered_events/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    match /webhook_raw_logs/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if true; // Allow server-side or public test-webhook logs
+    }
+
+    // Automation runs collection
+    match /automation_runs/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    // Global Promo codes collection
+    match /promo_codes/{codeId} {
+      allow read, update, create: if isAuthenticated();
+    }
+
+    // Published employees collection for sharing
+    match /published_employees/{id} {
+      allow read, create, update: if isAuthenticated();
+    }
+  }
+}
